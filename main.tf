@@ -76,3 +76,45 @@ resource "aws_route_table_association" "public_c" {
   subnet_id      = "${aws_subnet.public_c.id}"
   route_table_id = "${aws_route_table.public.id}"
 }
+
+# Security Group
+resource "aws_security_group" "this" {
+  name   = "APP_SG"
+  vpc_id = "${aws_vpc.this.id}"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  description = "tf-example-sg"
+}
+
+# EC2
+resource "aws_instance" "this_t2" {
+  ami                     = "ami-2a69be4c"
+  instance_type           = "t2.micro"
+  disable_api_termination = false
+  key_name                = "aws-key-pair"
+  vpc_security_group_ids  = ["${aws_security_group.this.id}"]
+  subnet_id               = "${aws_subnet.public_a.id}"
+
+  tags {
+    Name = "tf-example-ec2"
+  }
+}
+
+# ElasticIP
+resource "aws_eip" "this" {
+  instance = "${aws_instance.this_t2.id}"
+  vpc      = true
+}
